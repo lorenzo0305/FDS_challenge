@@ -4,6 +4,7 @@ from src.utils.type_resilience_score import type_resilience_score
 from src.utils.build_type_lookup import build_type_lookup
 import pandas as pd
 import numpy as np
+from IPython.display import display
 
 
 def create_simple_features(data: list[dict], type_lookup: dict) -> pd.DataFrame:
@@ -187,21 +188,3 @@ def create_simple_features(data: list[dict], type_lookup: dict) -> pd.DataFrame:
     return df
 
 
-print("Building Pokémon type lookup table...")
-type_lookup = build_type_lookup(train_data)
-print(f"Type lookup built with {len(type_lookup)} unique Pokémon.")
-
-# Create feature DataFrames for both training and test sets
-print("Processing training data...")
-train_df = create_simple_features(train_data, type_lookup)
-
-
-print("\nProcessing test data...")
-test_data = []
-with open(test_file_path, 'r') as f:
-    for line in f:
-        test_data.append(json.loads(line))
-test_df = create_simple_features(test_data, type_lookup)
-
-print("\nTraining features preview:")
-display(train_df.head())
