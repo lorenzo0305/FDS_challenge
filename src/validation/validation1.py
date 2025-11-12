@@ -7,6 +7,7 @@ from sklearn.metrics import (
     confusion_matrix, classification_report
 )
 from sklearn.model_selection import StratifiedKFold, cross_val_score
+import numpy as np
 
 
 def cross_validate_model(model, X_train, y_train, n_splits=5, random_state=42):
