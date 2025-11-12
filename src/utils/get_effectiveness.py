@@ -1,4 +1,4 @@
-from src.utils import get_type_chart
+from src.utils.get_type_chart import get_type_chart
 
 
 def get_effectiveness(attacker_types, defender_types):

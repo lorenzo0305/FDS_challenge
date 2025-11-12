@@ -1,5 +1,5 @@
 
-from src.utils import get_type_chart
+from src.utils.get_type_chart import get_type_chart
 
 def type_resilience_score(types):
         """Score global du type (nombre de forces - faiblesses)."""
