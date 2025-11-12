@@ -1,13 +1,14 @@
 from src.utils.get_type_chart import get_type_chart
 from src.utils.get_effectiveness import get_effectiveness
 from src.utils.type_resilience_score import type_resilience_score
-from src.utils.build_type_lookup import build_type_lookup
+from src.utils.analyze_global_p2_usage import analyze_global_p2_usage
 import pandas as pd
 import numpy as np
 from IPython.display import display
+from tqdm.notebook import tqdm
 
 
-def create_simple_features(data: list[dict], type_lookup: dict) -> pd.DataFrame:
+def create_simple_features(data: list[dict], type_lookup: dict, all_p2_pokemons: set = None) -> pd.DataFrame:
     """
     Extracts features from Pokémon battle data.
     - Team stats
@@ -20,8 +21,6 @@ def create_simple_features(data: list[dict], type_lookup: dict) -> pd.DataFrame:
     feature_list = []
     type_chart = get_type_chart()
     print("Building Pokémon type lookup table...")
-    type_lookup = build_type_lookup(train_data)
-    print(f"Type lookup built with {len(type_lookup)} unique Pokémon.")
     
 
     
