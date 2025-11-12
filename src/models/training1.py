@@ -7,6 +7,8 @@ from sklearn.metrics import (
     confusion_matrix, classification_report
 )
 import pandas as pd
+from sklearn.pipeline import make_pipeline
+
 
 def train_logistic_model(train_df: pd.DataFrame, test_df: pd.DataFrame):
     """
