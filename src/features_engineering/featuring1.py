@@ -1,5 +1,6 @@
 from src.utils import get_type_chart
 from src.utils import compute_effectiveness
+import pandas as pd
 
 
 def create_simple_features(data: list[dict]) -> pd.DataFrame:
