@@ -5,25 +5,25 @@ from src.utils.analyze_global_p2_usage import analyze_global_p2_usage
 import pandas as pd
 import numpy as np
 from IPython.display import display
-from tqdm.notebook import tqdm
+from tqdm.notebook import tqdm # type: ignore
 
 
 def create_simple_features(data: list[dict], type_lookup: dict, all_p2_pokemons: set = None) -> pd.DataFrame:
     """
-    Extracts features from Pokémon battle data.
-    - Team stats
-    - Status and boosts
-    - Tempo advantage
-    - Type vulnerability
-    - Survivors (alive count + types + HP)
-    - NEW: type_hp_match_score -> comparative advantage between P1 and P2 survivors
+    Extract features from Pokémon battle data.
+    
+    Args:
+        data: list of battle dictionaries
+        type_lookup: dict mapping Pokémon name -> stats dict with keys 'base_hp', 'base_atk', etc.
+        all_p2_pokemons: optional set of globally seen P2 Pokémon for fallback
+
+    Returns:
+        DataFrame with features for each battle
     """
     feature_list = []
     type_chart = get_type_chart()
     print("Building Pokémon type lookup table...")
-    
 
-    
     for battle in tqdm(data, desc="Extracting features"):
         features = {}
         battle_timeline = battle.get('battle_timeline', [])
@@ -33,15 +33,16 @@ def create_simple_features(data: list[dict], type_lookup: dict, all_p2_pokemons:
         p1_team = battle.get('p1_team_details', [])
         p2_lead = battle.get('p2_lead_details', {})
 
-        # --- Moyennes d’équipe P1 ---
+        # --- P1 Team stats ---
         if p1_team:
-            features['p1_mean_hp'] = np.mean([p.get('base_hp', 0) for p in p1_team])
+            features['p1_mean_hp']  = np.mean([p.get('base_hp', 0) for p in p1_team])
             features['p1_mean_atk'] = np.mean([p.get('base_atk', 0) for p in p1_team])
             features['p1_mean_def'] = np.mean([p.get('base_def', 0) for p in p1_team])
             features['p1_mean_spe'] = np.mean([p.get('base_spe', 0) for p in p1_team])
+        else:
+            features['p1_mean_hp'] = features['p1_mean_atk'] = features['p1_mean_def'] = features['p1_mean_spe'] = 0
 
-        # --- Approximation d’équipe P2 ---
-        # → On récupère tous les pokémons vus pour P2 dans ce combat
+        # --- Approximation P2 Team ---
         p2_seen = set()
         for turn in battle_timeline[:30]:
             state = turn.get('p2_pokemon_state', {})
@@ -50,30 +51,27 @@ def create_simple_features(data: list[dict], type_lookup: dict, all_p2_pokemons:
                 if name:
                     p2_seen.add(name.lower())
 
-        # Si pas de Pokémon vu dans le combat, on peut fallback sur la liste globale all_p2_pokemons
+        # Fallback sur la liste globale
         if not p2_seen and all_p2_pokemons:
             p2_seen = set(list(all_p2_pokemons)[:6])
 
-        # --- Calcul des stats P2 depuis type_lookup ---
-        if p2_seen:
-            p2_stats = [type_lookup.get(name, {}) for name in p2_seen if name in type_lookup]
-            if p2_stats:
-                features['p2_mean_hp'] = np.mean([s.get('base_hp', 0) for s in p2_stats])
-                features['p2_mean_atk'] = np.mean([s.get('base_atk', 0) for s in p2_stats])
-                features['p2_mean_def'] = np.mean([s.get('base_def', 0) for s in p2_stats])
-                features['p2_mean_spe'] = np.mean([s.get('base_spe', 0) for s in p2_stats])
-            else:
-                features['p2_mean_hp'] = features['p2_mean_atk'] = features['p2_mean_def'] = features['p2_mean_spe'] = 0
+        # --- P2 stats ---
+        p2_stats = [type_lookup[name] for name in p2_seen if isinstance(type_lookup.get(name), dict)]
+        if p2_stats:
+            features['p2_mean_hp']  = np.mean([s.get('base_hp', 0) for s in p2_stats])
+            features['p2_mean_atk'] = np.mean([s.get('base_atk', 0) for s in p2_stats])
+            features['p2_mean_def'] = np.mean([s.get('base_def', 0) for s in p2_stats])
+            features['p2_mean_spe'] = np.mean([s.get('base_spe', 0) for s in p2_stats])
         else:
             features['p2_mean_hp'] = features['p2_mean_atk'] = features['p2_mean_def'] = features['p2_mean_spe'] = 0
 
-        # --- Différences d’équipe (nouveaux indicateurs) ---
+        # --- Différences P1 vs P2 ---
         features['hp_team_diff']  = features['p1_mean_hp']  - features['p2_mean_hp']
         features['atk_team_diff'] = features['p1_mean_atk'] - features['p2_mean_atk']
         features['def_team_diff'] = features['p1_mean_def'] - features['p2_mean_def']
         features['spe_team_diff'] = features['p1_mean_spe'] - features['p2_mean_spe']
 
-        # --- Statuts (hors fainted) ---
+        # --- Status ---
         p1_status, p2_status = [], []
         for turn in battle_timeline[:30]:
             for player, store in [('p1_pokemon_state', p1_status), ('p2_pokemon_state', p2_status)]:
@@ -86,46 +84,22 @@ def create_simple_features(data: list[dict], type_lookup: dict, all_p2_pokemons:
         features['p2_num_status'] = len(p2_status)
         features['status_diff'] = len(p2_status) - len(p1_status)
 
-        # --- TEMPO / ADVANTAGE ---
+        # --- TEMPO ---
         p1_adv_turns = p2_adv_turns = 0
         for turn in battle_timeline[:30]:
             p1_hp = turn.get('p1_pokemon_state', {}).get('hp_pct', 1.0)
             p2_hp = turn.get('p2_pokemon_state', {}).get('hp_pct', 1.0)
-            if p1_hp > p2_hp:
-                p1_adv_turns += 1
-            elif p2_hp > p1_hp:
-                p2_adv_turns += 1
+            if p1_hp > p2_hp: p1_adv_turns += 1
+            elif p2_hp > p1_hp: p2_adv_turns += 1
         features['p1_advantage_ratio'] = p1_adv_turns / 30
         features['p2_advantage_ratio'] = p2_adv_turns / 30
         features['tempo_balance'] = features['p1_advantage_ratio'] - features['p2_advantage_ratio']
 
-        # --- ACTIVITÉ EN COMBAT (nombre de tours avec action offensive) ---
-        p1_active_moves = 0
-        p2_active_moves = 0
-        total_turns = min(len(battle_timeline), 30)
-
-        for turn in battle_timeline[:30]:
-            # P1
-            move_p1 = turn.get('p1_move_details')
-            if move_p1 and isinstance(move_p1, dict):
-                p1_active_moves += 1
-
-            # P2
-            move_p2 = turn.get('p2_move_details')
-            if move_p2 and isinstance(move_p2, dict):
-                p2_active_moves += 1
-
-        features['p1_move_activity'] = p1_active_moves / total_turns if total_turns else 0
-        features['p2_move_activity'] = p2_active_moves / total_turns if total_turns else 0
-        features['move_activity_diff'] = features['p1_move_activity'] - features['p2_move_activity']
-
-
-        # --- SURVIVANTS À LA FIN DES 30 TOURS ---
+        # --- Survivants ---
         p1_alive, p2_alive = [], []
         p1_hp_alive, p2_hp_alive = {}, {}
         p1_types, p2_types = [], []
 
-        # Joueur 1
         for poke in p1_team:
             name = poke.get('name')
             last_state = None
@@ -141,7 +115,6 @@ def create_simple_features(data: list[dict], type_lookup: dict, all_p2_pokemons:
                 p1_hp_alive[name.lower()] = hp
                 p1_types.extend([t for t in poke.get('types', []) if t != 'notype'])
 
-        # Joueur 2
         for turn in battle_timeline[:30]:
             state = turn.get('p2_pokemon_state', {})
             if isinstance(state, dict):
@@ -154,7 +127,6 @@ def create_simple_features(data: list[dict], type_lookup: dict, all_p2_pokemons:
                         p2_types.extend([t for t in battle['p2_lead_details'].get('types', []) if t != 'notype'])
                     p2_alive.append(name.lower())
 
-        # --- Compte et scores simples ---
         features['p1_alive_count'] = len(set(p1_alive))
         features['p2_alive_count'] = len(set(p2_alive))
         features['alive_diff'] = features['p1_alive_count'] - features['p2_alive_count']
@@ -162,8 +134,8 @@ def create_simple_features(data: list[dict], type_lookup: dict, all_p2_pokemons:
         features['p2_alive_type_score'] = type_resilience_score(p2_types)
         features['type_alive_diff'] = features['p1_alive_type_score'] - features['p2_alive_type_score']
 
-        # --- 🔹 NOUVEL INDICATEUR : type_hp_match_score ---
-        matchup_sum, matchup_count = 0, 0
+        # --- type_hp_match_score ---
+        matchup_sum = matchup_count = 0
         for p1_name in p1_alive:
             p1_types_local = type_lookup.get(p1_name, [])
             for p2_name in p2_alive:
@@ -185,5 +157,4 @@ def create_simple_features(data: list[dict], type_lookup: dict, all_p2_pokemons:
     print(f"\n✅ Feature extraction done for {len(df)} battles.")
     display(df.head())
     return df
-
 
