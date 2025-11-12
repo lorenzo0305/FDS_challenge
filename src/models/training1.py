@@ -8,6 +8,9 @@ from sklearn.metrics import (
 )
 import pandas as pd
 from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import GridSearchCV
+
 
 
 def train_logistic_model(train_df: pd.DataFrame, test_df: pd.DataFrame):
