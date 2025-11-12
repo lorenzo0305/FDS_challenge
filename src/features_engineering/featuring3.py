@@ -2,7 +2,8 @@ from src.utils.get_type_chart import get_type_chart
 from src.utils.get_effectiveness import get_effectiveness
 from src.utils.type_resilience_score import type_resilience_score
 from src.utils.build_type_lookup import build_type_lookup
-
+import pandas as pd
+import numpy as np
 
 
 def create_simple_features(data: list[dict], type_lookup: dict) -> pd.DataFrame:
