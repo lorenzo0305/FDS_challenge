@@ -1,6 +1,8 @@
 from src.utils.get_type_chart import get_type_chart
 from src.utils.compute_effectiveness import compute_effectiveness
 import pandas as pd
+import numpy as np
+
 from tqdm.notebook import tqdm
 
 
