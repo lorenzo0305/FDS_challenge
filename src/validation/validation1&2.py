@@ -6,6 +6,8 @@ from sklearn.metrics import (
     accuracy_score, f1_score, roc_auc_score,
     confusion_matrix, classification_report
 )
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+
 
 def cross_validate_model(model, X_train, y_train, n_splits=5, random_state=42):
     """
