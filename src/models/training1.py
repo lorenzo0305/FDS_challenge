@@ -6,6 +6,7 @@ from sklearn.metrics import (
     accuracy_score, f1_score, roc_auc_score,
     confusion_matrix, classification_report
 )
+import pandas as pd
 
 def train_logistic_model(train_df: pd.DataFrame, test_df: pd.DataFrame):
     """
