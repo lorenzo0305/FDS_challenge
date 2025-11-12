@@ -5,6 +5,8 @@ from src.utils.build_type_lookup import build_type_lookup
 import pandas as pd
 import numpy as np
 from IPython.display import display
+from tqdm.notebook import tqdm
+
 
 
 def create_simple_features(data: list[dict], type_lookup: dict) -> pd.DataFrame:
@@ -20,8 +22,6 @@ def create_simple_features(data: list[dict], type_lookup: dict) -> pd.DataFrame:
     feature_list = []
     type_chart = get_type_chart()
     print("Building Pokémon type lookup table...")
-    type_lookup = build_type_lookup(train_data)
-    print(f"Type lookup built with {len(type_lookup)} unique Pokémon.")
 
 
     for battle in tqdm(data, desc="Extracting features"):
