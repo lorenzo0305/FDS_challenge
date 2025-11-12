@@ -1,6 +1,8 @@
-from src.utils import get_type_chart
-from src.utils import compute_effectiveness
+from src.utils.get_type_chart import get_type_chart
+from src.utils.compute_effectiveness import compute_effectiveness
 import pandas as pd
+from tqdm.notebook import tqdm
+
 
 
 def create_simple_features(data: list[dict]) -> pd.DataFrame:
