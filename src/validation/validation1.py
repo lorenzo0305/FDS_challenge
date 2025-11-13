@@ -12,19 +12,18 @@ import numpy as np
 
 def cross_validate_model(model, X_train, y_train, n_splits=5, random_state=42):
     """
-    Effectue une validation croisée stratifiée sur le modèle donné.
-    
+    Performs stratified cross-validation on the given model.
+
     Args:
-        model : scikit-learn estimator déjà entraîné (ou pipeline)
-        X_train : DataFrame ou array des features
-        y_train : Series ou array des labels
-        n_splits : nombre de plis pour StratifiedKFold
-        random_state : graine pour reproductibilité
-        
+        model: trained scikit-learn estimator (or pipeline)
+        X_train: DataFrame or array of features
+        y_train: Series or array of labels
+        n_splits: number of folds for StratifiedKFold
+        random_state: seed for reproducibility
     Returns:
-        cv_scores : array des scores Accuracy pour chaque pli
-        mean_score : moyenne des scores
-        std_score : écart-type des scores
+        cv_scores: array of Accuracy scores for each fold
+        mean_score: mean of the scores
+        std_score: standard deviation of the scores
     """
     print("\nPerforming {}-Fold Stratified Cross-Validation on the model...".format(n_splits))
     
