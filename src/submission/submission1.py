@@ -4,13 +4,14 @@ from IPython.display import display
 
 def create_submission(model, test_df, features, output_path='submission.csv'):
     """
-    Génère les prédictions sur le test set et sauvegarde un fichier CSV pour soumission.
-
+    Generates predictions on the test set and saves a CSV file for submission.
     Args:
-        model : scikit-learn estimator entraîné (ou pipeline)
-        test_df : DataFrame du test set contenant 'battle_id' et les features
-        features : liste des colonnes/features à utiliser
-        output_path : chemin/fichier de sortie pour le CSV
+        model: trained scikit-learn estimator (or pipeline)
+        test_df: DataFrame of the test set containing 'battle_id' and the features
+        features: list of columns/features to use
+        output_path: output path/filename for the CSV file
+    Returns:
+        submission_df: DataFrame containing the predictions
     """
     print("Generating predictions on the test set...")
     

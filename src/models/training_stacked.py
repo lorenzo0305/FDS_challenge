@@ -1,4 +1,3 @@
-# train_models.py
 import numpy as np
 import pandas as pd
 import lightgbm as lgb
@@ -15,32 +14,32 @@ import seaborn as sns
 
 def train_stacked_model(train_df, test_df, display_cm=True, random_state=42):
     """
-    Entraîne un modèle empilé (stacked) avec LGBM, XGB, RF + Logistic Regression.
-    Retourne le modèle entraîné et les features utilisées.
+    Trains a stacked model using LGBM, XGB, and RF with Logistic Regression.
+    Returns the trained model and the features used.
     
     Args:
-        train_df : DataFrame avec colonnes features + 'player_won'
-        test_df  : DataFrame avec les mêmes features
-        display_cm : bool, si True affiche la matrice de confusion
-        random_state : int, pour reproductibilité
+        train_df: DataFrame containing feature columns and 'player_won'
+        test_df: DataFrame with the same feature columns
+        display_cm: bool, if True, displays the confusion matrix
+        random_state: int, for reproducibility
 
     Returns:
-        stack_model : modèle entraîné (StackingClassifier)
-        features : liste des colonnes/features utilisées
+        stack_model: trained model (StackingClassifier)
+        features: list of columns/features used
     """
-    # --- Définir les features et cible ---
+    # Features and target 
     features = [c for c in train_df.columns if c not in ['battle_id', 'player_won']]
     X = train_df[features]
     y = train_df['player_won'].astype(int)
     X_test = test_df[features]
 
-    # --- Train / Validation split ---
+    # Train / Validation split
     X_train, X_val, y_train, y_val = train_test_split(
         X, y, test_size=0.2, random_state=random_state, stratify=y
     )
     print(f"Train size: {len(X_train)}, Validation size: {len(X_val)}")
 
-    # --- Base learners ---
+    # Base learners 
     base_learners = [
         ('lgbm', lgb.LGBMClassifier(
             objective='binary', learning_rate=0.03, n_estimators=2000,
@@ -57,22 +56,22 @@ def train_stacked_model(train_df, test_df, display_cm=True, random_state=42):
         ))
     ]
 
-    # --- Meta model ---
+    # Meta model
     meta_model = LogisticRegression(
         solver='lbfgs', max_iter=4000, random_state=random_state
     )
 
-    # --- Stacking ---
+    # Stacking 
     stack_model = StackingClassifier(
         estimators=base_learners, final_estimator=meta_model,
         stack_method='predict_proba', passthrough=True, n_jobs=-1
     )
 
-    # --- Entraînement ---
+    # Training 
     print("\Training stacked model...")
     stack_model.fit(X_train, y_train)
 
-    # --- Évaluation ---
+    # Evaluate
     y_proba = stack_model.predict_proba(X_val)[:, 1]
     y_pred = (y_proba >= 0.5).astype(int)
 
@@ -84,7 +83,7 @@ def train_stacked_model(train_df, test_df, display_cm=True, random_state=42):
     print("\nClassification Report:")
     print(classification_report(y_val, y_pred, digits=3))
 
-    # --- Confusion Matrix ---
+    # Confusion Matrix 
     if display_cm:
         cm = confusion_matrix(y_val, y_pred)
         sns.heatmap(cm, annot=True, fmt="d", cmap="Blues",

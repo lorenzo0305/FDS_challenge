@@ -2,7 +2,7 @@ from src.utils.get_type_chart import get_type_chart
 
 
 def get_effectiveness(attacker_types, defender_types):
-        """Score moyen d'efficacité entre deux sets de types."""
+        """Average effectiveness score between two sets of types."""
         type_chart = get_type_chart()
         total, count = 0, 0
         for atk in attacker_types:

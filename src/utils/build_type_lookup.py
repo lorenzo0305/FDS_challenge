@@ -1,4 +1,4 @@
-# --- Build lookup table of Pokémon types from all known teams ---
+# Build lookup table of Pokémon types from all known teams
 def build_type_lookup(data):
     lookup = {}
     for battle in data:

@@ -14,6 +14,7 @@ def create_simple_features(data: list[dict], type_lookup: dict) -> pd.DataFrame:
     Extracts features from Pokémon battle data.
     - Team stats
     - Status and boosts
+    - KO count
     - Tempo advantage
     - Type vulnerability
     - Survivors (alive count + types + HP)
@@ -33,21 +34,21 @@ def create_simple_features(data: list[dict], type_lookup: dict) -> pd.DataFrame:
         p1_team = battle.get('p1_team_details', [])
         p2_lead = battle.get('p2_lead_details', {})
 
-        # --- Moyennes d’équipe P1 ---
+        # Stats P1 team
         if p1_team:
             features['p1_mean_hp'] = np.mean([p.get('base_hp', 0) for p in p1_team])
             features['p1_mean_atk'] = np.mean([p.get('base_atk', 0) for p in p1_team])
             features['p1_mean_def'] = np.mean([p.get('base_def', 0) for p in p1_team])
             features['p1_mean_spe'] = np.mean([p.get('base_spe', 0) for p in p1_team])
 
-        # --- Statistiques du lead adverse ---
+        # Stats P2 team leader
         if p2_lead:
             features['p2_lead_hp'] = p2_lead.get('base_hp', 0)
             features['p2_lead_atk'] = p2_lead.get('base_atk', 0)
             features['p2_lead_def'] = p2_lead.get('base_def', 0)
             features['p2_lead_spe'] = p2_lead.get('base_spe', 0)
 
-        # --- Statuts (hors fainted) ---
+        # Statuts (except fainted)
         p1_status, p2_status = [], []
         for turn in battle_timeline[:30]:
             for player, store in [('p1_pokemon_state', p1_status), ('p2_pokemon_state', p2_status)]:
@@ -60,7 +61,7 @@ def create_simple_features(data: list[dict], type_lookup: dict) -> pd.DataFrame:
         features['p2_num_status'] = len(p2_status)
         features['status_diff'] = len(p2_status) - len(p1_status)
 
-        # --- TEMPO / ADVANTAGE ---
+        # tempo/advantage
         p1_adv_turns = p2_adv_turns = 0
         for turn in battle_timeline[:30]:
             p1_hp = turn.get('p1_pokemon_state', {}).get('hp_pct', 1.0)
@@ -73,7 +74,7 @@ def create_simple_features(data: list[dict], type_lookup: dict) -> pd.DataFrame:
         features['p2_advantage_ratio'] = p2_adv_turns / 30
         features['tempo_balance'] = features['p1_advantage_ratio'] - features['p2_advantage_ratio']
 
-        # --- SURVIVANTS À LA FIN DES 30 TOURS ---
+        # pokemon alive at the end of the 30 rounds
         p1_alive, p2_alive = [], []
         p1_hp_alive, p2_hp_alive = {}, {}
         p1_types, p2_types = [], []
@@ -107,7 +108,7 @@ def create_simple_features(data: list[dict], type_lookup: dict) -> pd.DataFrame:
                         p2_types.extend([t for t in battle['p2_lead_details'].get('types', []) if t != 'notype'])
                     p2_alive.append(name.lower())
 
-        # --- Compte et scores simples ---
+        # features count
         features['p1_alive_count'] = len(set(p1_alive))
         features['p2_alive_count'] = len(set(p2_alive))
         features['alive_diff'] = features['p2_alive_count'] - features['p1_alive_count']
@@ -115,7 +116,7 @@ def create_simple_features(data: list[dict], type_lookup: dict) -> pd.DataFrame:
         features['p2_alive_type_score'] = type_resilience_score(p2_types)
         features['type_alive_diff'] = features['p2_alive_type_score'] - features['p1_alive_type_score']
 
-        # --- 🔹 NOUVEL INDICATEUR : type_hp_match_score ---
+        # Key indicator : type_hp_match_score
         matchup_sum, matchup_count = 0, 0
         for p1_name in p1_alive:
             p1_types_local = type_lookup.get(p1_name, [])
@@ -127,7 +128,7 @@ def create_simple_features(data: list[dict], type_lookup: dict) -> pd.DataFrame:
                 matchup_count += 1
         features['type_hp_match_score'] = matchup_sum / matchup_count if matchup_count else 0
 
-        # --- ID et cible ---
+        # ID and target
         features['battle_id'] = battle.get('battle_id')
         if 'player_won' in battle:
             features['player_won'] = int(battle['player_won'])
@@ -135,7 +136,7 @@ def create_simple_features(data: list[dict], type_lookup: dict) -> pd.DataFrame:
         feature_list.append(features)
 
     df = pd.DataFrame(feature_list).fillna(0)
-    print(f"\n✅ Feature extraction done for {len(df)} battles.")
+    print(f"\n Feature extraction done for {len(df)} battles.")
     display(df.head())
     return df
 

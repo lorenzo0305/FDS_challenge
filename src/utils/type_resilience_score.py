@@ -2,7 +2,7 @@
 from src.utils.get_type_chart import get_type_chart
 
 def type_resilience_score(types):
-        """Score global du type (nombre de forces - faiblesses)."""
+        """Overall type score (number of strengths minus weaknesses)."""
         type_chart = get_type_chart()
         score = 0
         for t in types:

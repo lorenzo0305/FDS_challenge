@@ -10,6 +10,9 @@ from tqdm.notebook import tqdm
 def create_simple_features(data: list[dict]) -> pd.DataFrame:
     """
     Extract battle-level features from Pokémon battle data.
+    - Team stats
+    - Status and boosts
+    - KO count
     """
 
     type_chart = get_type_chart()
@@ -22,21 +25,21 @@ def create_simple_features(data: list[dict]) -> pd.DataFrame:
         p1_team = battle.get('p1_team_details', [])
         p2_lead = battle.get('p2_lead_details', {})
 
-        # --- Player 1 Team Features ---
+        # Player 1 Team Features
         if p1_team:
             features['p1_mean_hp'] = np.mean([p.get('base_hp', 0) for p in p1_team])
             features['p1_mean_spe'] = np.mean([p.get('base_spe', 0) for p in p1_team])
             features['p1_mean_atk'] = np.mean([p.get('base_atk', 0) for p in p1_team])
             features['p1_mean_def'] = np.mean([p.get('base_def', 0) for p in p1_team])
 
-        # --- Player 2 Lead Features ---
+        #  Player 2 Lead Features
         if p2_lead:
             features['p2_lead_hp'] = p2_lead.get('base_hp', 0)
             features['p2_lead_spe'] = p2_lead.get('base_spe', 0)
             features['p2_lead_atk'] = p2_lead.get('base_atk', 0)
             features['p2_lead_def'] = p2_lead.get('base_def', 0)
 
-        # --- Nombre de K.O. pour chaque joueur ---
+        # K.O. number for each player
         p1_KO_set, p2_KO_set = set(), set()
         if battle_timeline:
             for turn in battle_timeline[:30]:
@@ -63,7 +66,7 @@ def create_simple_features(data: list[dict]) -> pd.DataFrame:
         features['p2_num_KO'] = len(p2_KO_set)
         features['ko_diff'] = len(p2_KO_set) - len(p1_KO_set)
 
-        # --- Comptage des statuts (hors 'fnt') sur les 30 premiers tours ---
+        # statuts count on the first 30 rounds
         p1_status_set, p2_status_set = [], []
         if battle_timeline:
             for turn in battle_timeline[:30]:
@@ -84,7 +87,7 @@ def create_simple_features(data: list[dict]) -> pd.DataFrame:
         features['p2_num_status'] = len(p2_status_set)
         features['status_diff'] = len(p2_status_set) - len(p1_status_set)
 
-        # --- Pourcentage de HP restants à la fin des 30 premiers tours ---
+        # HP percentages at the end of the first 30 rounds
         p1_hp_last, p2_hp_last = {}, {}
         if battle_timeline:
             for turn in battle_timeline[:30]:
@@ -124,11 +127,11 @@ def create_simple_features(data: list[dict]) -> pd.DataFrame:
         features['hp_remaining_diff'] = features['p2_mean_hp_remaining'] - features['p1_mean_hp_remaining']
 
 
-        # --- Attaques subies (vulnérabilité) ---
+        # Attacks received
         attack_types_received = []
         for turn in battle_timeline[:30]:
             move_details = turn.get('p2_move_details')
-            if isinstance(move_details, dict):  # ✅ Vérifie que c’est bien un dict
+            if isinstance(move_details, dict):  # Vérifie que c’est bien un dict
                 move_type = str(move_details.get('type', '')).lower()
                 if move_type not in ['', 'notype', 'none']:
                     attack_types_received.append(move_type)
@@ -162,7 +165,7 @@ def create_simple_features(data: list[dict]) -> pd.DataFrame:
         features['tempo_balance'] = features['p1_advantage_ratio'] - features['p2_advantage_ratio']
 
         
-        # --- BOOSTS MOYENS SUR LES 30 PREMIERS TOURS ---
+        # mean boost on the 30 first rounds
         p1_boost_sum = 0
         p2_boost_sum = 0
         p1_boost_count = 0
@@ -188,13 +191,13 @@ def create_simple_features(data: list[dict]) -> pd.DataFrame:
                         p2_boost_sum += boost_total
                         p2_boost_count += 1
 
-        # Moyenne des boosts (ou 0 si aucune donnée)
+        # Boost mean (or 0 if any data available)
         features['p1_mean_boosts'] = p1_boost_sum / p1_boost_count if p1_boost_count > 0 else 0
         features['p2_mean_boosts'] = p2_boost_sum / p2_boost_count if p2_boost_count > 0 else 0
         features['boost_diff'] = features['p2_mean_boosts'] - features['p1_mean_boosts']
 
         
-        # --- Battle ID & target ---
+        # Battle ID & target 
         features['battle_id'] = battle.get('battle_id')
         if 'player_won' in battle:
             features['player_won'] = int(battle['player_won'])

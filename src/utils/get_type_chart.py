@@ -1,5 +1,5 @@
 def get_type_chart() -> dict:
-    """Retourne le tableau des interactions de types Pokémon."""
+    """Returns the Pokémon type interaction table."""
     return {
         "normal": {"rock": 0.5, "ghost": 0.0, "steel": 0.5},
         "fire": {"fire": 0.5, "water": 0.5, "grass": 2.0, "ice": 2.0, "bug": 2.0, "rock": 0.5, "dragon": 0.5, "steel": 2.0},
